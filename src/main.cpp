@@ -1,6 +1,6 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_ST7789.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiAP.h>
 #include <ESPAsyncTCP.h>
@@ -9,18 +9,26 @@
 #include <AsyncElegantOTA.h>
 #include <WiFiUdp.h>
 #include <ESP8266WiFiGratuitous.h>
+#include <SPI.h>
 
-const char* ssid = "CurrentDiagReceiver";
+const char* ssid = "CurrentDiag";
 const char* pass = "123456789";
 
 AsyncWebServer server(80);
 
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
+#define SCREEN_WIDTH 240
+#define SCREEN_HEIGHT 280
+#define TFT_CS D6//D8
+#define TFT_RST -1//D0
+#define TFT_DC D1
+#define TFT_BL D2
+#define TFT_MOSI D7
+#define TFT_SCLK D5
 
-#define OLED_RESET -1
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#define AUDI_RED 0x3000
+#define AUDI_HIGHLIGHTED_RED 0x9000
 
+Adafruit_ST7789 display = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
 const int EXDURATION = 2;
 const int TIMEOUT = 2;
 const int PORT = 8266;
@@ -85,7 +93,7 @@ void eventCb(System_Event_t *evt)
 
 void initWiFi()
 {
-  Serial.println("Setting soft-AP ... ");
+  /* Serial.println("Setting soft-AP ... ");
   wifi_set_event_handler_cb(eventCb);
 
   IPAddress apIP(192, 168, 4, 1);
@@ -102,7 +110,21 @@ void initWiFi()
   
   IPAddress IP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
-  Serial.println(IP);
+  Serial.println(IP); */
+  if (WiFi.status() != WL_CONNECTED){
+    WiFi.disconnect();                                          // probably not necessary due to WiFi.status() != WL_CONNECTED
+    WiFi.begin(ssid, pass);                                 // reconnect to the Network
+    Serial.println();
+    Serial.print("Wait for WiFi");
+
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("");
+    Serial.println("WiFi connected");
+    Serial.println("IP address: " + WiFi.localIP().toString());
+  }
 
   AsyncElegantOTA.begin(&server);
 
@@ -113,12 +135,11 @@ void initWiFi()
 }
 
 void printDisplay(const char *string, int duration_s) {
-  display.clearDisplay();
+  display.fillScreen(AUDI_RED);
   display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
+  display.setTextColor(AUDI_HIGHLIGHTED_RED);
   display.setCursor(0, 0);
   display.println(string);
-  display.display();
   delay(duration_s * 1000);
 }
 
@@ -131,24 +152,24 @@ void drawValueBar(int x, int y, int width, int height, float valueMin, float val
   int start = min(pxPositionValue, pxPositionVline);
   int end = max(pxPositionValue, pxPositionVline);
 
-  display.drawRect(x, y, width, height, SSD1306_WHITE);
-  display.fillRect(x + start, y + 2, end - start, height - 4, SSD1306_WHITE);
+  display.drawRect(x, y, width, height, AUDI_HIGHLIGHTED_RED);
+  display.fillRect(x + start, y + 2, end - start, height - 4, AUDI_HIGHLIGHTED_RED);
 
   if (height >= 15 && showNumbers) {
     if (value >= vlineValue) {
       display.setTextSize(1);
-      display.setTextColor(SSD1306_WHITE);
+      display.setTextColor(AUDI_HIGHLIGHTED_RED);
       display.setCursor(int(width / 9), y + 5);
       display.println(String(roundValue, 2));
     } else {
       display.setTextSize(1);
-      display.setTextColor(SSD1306_WHITE);
+      display.setTextColor(AUDI_HIGHLIGHTED_RED);
       display.setCursor(int(width / 1.5), y + 5);
       display.println(String(roundValue, 2));
     }
   }
 
-  display.drawFastVLine(pxPositionVline, y - 1, height + 2, SSD1306_WHITE);
+  display.drawFastVLine(pxPositionVline, y - 1, height + 2, AUDI_HIGHLIGHTED_RED);
 }
 
 void setup() {
@@ -157,14 +178,17 @@ void setup() {
   {
     ; // Needed for native USB port only
   }
+
+  analogWrite(TFT_BL, 255);
   
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  display.setTextColor(SSD1306_WHITE);
-  display.clearDisplay();
+  display.init(SCREEN_WIDTH, SCREEN_HEIGHT);
+  display.setSPISpeed(40000000);
+  display.setRotation(3);
+  display.setTextColor(AUDI_HIGHLIGHTED_RED);
+  display.fillScreen(AUDI_RED);
   display.setTextSize(1);
   display.setCursor(0, 0);
   display.println("Connecting...");
-  display.display();
 
   initWiFi();
   delay(1000);
@@ -172,7 +196,7 @@ void setup() {
 
 void loop() {
   // Empfangen und Verarbeiten der Daten
-  display.clearDisplay();
+  display.fillScreen(AUDI_RED);
 
   while (true) {
     int packetSize = Udp.parsePacket();
@@ -186,9 +210,9 @@ void loop() {
         String msg = String(packetBuffer);
 
         // Daten verarbeiten und auf dem Display anzeigen
-        display.clearDisplay();
+        display.fillScreen(AUDI_RED);
         display.setTextSize(1);
-        display.setTextColor(SSD1306_WHITE);
+        display.setTextColor(AUDI_HIGHLIGHTED_RED);
         display.setCursor(0, 0);
 
         // JSON-Daten parsen und anzeigen
@@ -213,17 +237,14 @@ void loop() {
       }
     } else {
       // Fehler beim Empfangen des Pakets
-      /* display.clearDisplay();
+      /* display.fillScreen(AUDI_RED);
       display.setTextSize(1);
-      display.setTextColor(SSD1306_WHITE);
+      display.setTextColor(AUDI_HIGHLIGHTED_RED);
       display.setCursor(0, 0);
       display.println("Error receiving packet!");
-      display.display();
       delay(EXDURATION * 1000); */
     }
   }
-
-  display.display();
 
   delay(500);
 }

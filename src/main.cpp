@@ -1,6 +1,4 @@
 #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_ST7789.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiAP.h>
 #include <ESPAsyncTCP.h>
@@ -9,26 +7,38 @@
 #include <AsyncElegantOTA.h>
 #include <WiFiUdp.h>
 #include <ESP8266WiFiGratuitous.h>
+#include <TFT_eSPI.h>       // Hardware-specific library
 #include <SPI.h>
 
-const char* ssid = "CurrentDiag";
+#define DRAW_DIGITS
+
+#ifdef DRAW_DIGITS
+  #include "NotoSans_Bold.h"
+  #include "OpenFontRender.h"
+  #define TTF_FONT NotoSans_Bold
+#endif
+
+TFT_eSPI display = TFT_eSPI();  // Invoke custom library
+
+TFT_eSprite spr = TFT_eSprite(&display);  // Declare Sprite object "spr" with pointer to "tft" object
+
+#ifdef DRAW_DIGITS
+OpenFontRender ofr;
+#endif
+
+const char* ssid = "CurrentDiagReceiver";
 const char* pass = "123456789";
 
 AsyncWebServer server(80);
 
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 280
-#define TFT_CS D6//D8
-#define TFT_RST -1//D0
-#define TFT_DC D1
+#define SCREEN_OFFSET 50
 #define TFT_BL D2
-#define TFT_MOSI D7
-#define TFT_SCLK D5
 
 #define AUDI_RED 0x3000
 #define AUDI_HIGHLIGHTED_RED 0x9000
 
-Adafruit_ST7789 display = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
 const int EXDURATION = 2;
 const int TIMEOUT = 2;
 const int PORT = 8266;
@@ -93,7 +103,7 @@ void eventCb(System_Event_t *evt)
 
 void initWiFi()
 {
-  /* Serial.println("Setting soft-AP ... ");
+  Serial.println("Setting soft-AP ... ");
   wifi_set_event_handler_cb(eventCb);
 
   IPAddress apIP(192, 168, 4, 1);
@@ -110,10 +120,11 @@ void initWiFi()
   
   IPAddress IP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
-  Serial.println(IP); */
+  Serial.println(IP);
+
   if (WiFi.status() != WL_CONNECTED){
-    WiFi.disconnect();                                          // probably not necessary due to WiFi.status() != WL_CONNECTED
-    WiFi.begin(ssid, pass);                                 // reconnect to the Network
+    WiFi.disconnect();
+    WiFi.begin("CurrentDiag", pass);
     Serial.println();
     Serial.print("Wait for WiFi");
 
@@ -136,9 +147,9 @@ void initWiFi()
 
 void printDisplay(const char *string, int duration_s) {
   display.fillScreen(AUDI_RED);
-  display.setTextSize(1);
+  display.setTextSize(3);
   display.setTextColor(AUDI_HIGHLIGHTED_RED);
-  display.setCursor(0, 0);
+  display.setCursor(0, 0 + SCREEN_OFFSET);
   display.println(string);
   delay(duration_s * 1000);
 }
@@ -157,12 +168,12 @@ void drawValueBar(int x, int y, int width, int height, float valueMin, float val
 
   if (height >= 15 && showNumbers) {
     if (value >= vlineValue) {
-      display.setTextSize(1);
+      display.setTextSize(3);
       display.setTextColor(AUDI_HIGHLIGHTED_RED);
       display.setCursor(int(width / 9), y + 5);
       display.println(String(roundValue, 2));
     } else {
-      display.setTextSize(1);
+      display.setTextSize(3);
       display.setTextColor(AUDI_HIGHLIGHTED_RED);
       display.setCursor(int(width / 1.5), y + 5);
       display.println(String(roundValue, 2));
@@ -181,13 +192,12 @@ void setup() {
 
   analogWrite(TFT_BL, 255);
   
-  display.init(SCREEN_WIDTH, SCREEN_HEIGHT);
-  display.setSPISpeed(40000000);
+  display.init();
   display.setRotation(3);
   display.setTextColor(AUDI_HIGHLIGHTED_RED);
   display.fillScreen(AUDI_RED);
-  display.setTextSize(1);
-  display.setCursor(0, 0);
+  display.setTextSize(3);
+  display.setCursor(0, 0 + SCREEN_OFFSET);
   display.println("Connecting...");
 
   initWiFi();
@@ -196,7 +206,7 @@ void setup() {
 
 void loop() {
   // Empfangen und Verarbeiten der Daten
-  display.fillScreen(AUDI_RED);
+  //display.fillScreen(AUDI_RED);
 
   while (true) {
     int packetSize = Udp.parsePacket();
@@ -211,9 +221,9 @@ void loop() {
 
         // Daten verarbeiten und auf dem Display anzeigen
         display.fillScreen(AUDI_RED);
-        display.setTextSize(1);
+        display.setTextSize(3);
         display.setTextColor(AUDI_HIGHLIGHTED_RED);
-        display.setCursor(0, 0);
+        display.setCursor(0, 0 + SCREEN_OFFSET);
 
         // JSON-Daten parsen und anzeigen
         DynamicJsonDocument data(255);
@@ -223,26 +233,18 @@ void loop() {
           display.println("Error parsing JSON!");
         } else {
           String actuatorString = "Actuator: " + String(data["sensor1"].as<const char*>()) + "mA";
-          display.setCursor(0, 0);
+          display.setCursor(0, 0 + SCREEN_OFFSET);
           display.println(actuatorString);
-          drawValueBar(0, 10, 128, 12, v1Min, v1Max, float(data["sensor1"]), v1Vline, false);
+          drawValueBar(0, 25 + SCREEN_OFFSET, 280, 22, v1Min, v1Max, float(data["sensor1"]), v1Vline, false);
 
           String lambdaString = "Lambda: " + String(data["sensor2"].as<const char*>());
-          display.setCursor(0, 26);
+          display.setCursor(0, 50 + SCREEN_OFFSET);
           display.println(lambdaString);
-          drawValueBar(0, 36, 128, 12, v2Min, v2Max, float(data["sensor2"]), v2Vline, false);
+          drawValueBar(0, 75 + SCREEN_OFFSET, 280, 22, v2Min, v2Max, float(data["sensor2"]), v2Vline, false);
         }
 
         break;
       }
-    } else {
-      // Fehler beim Empfangen des Pakets
-      /* display.fillScreen(AUDI_RED);
-      display.setTextSize(1);
-      display.setTextColor(AUDI_HIGHLIGHTED_RED);
-      display.setCursor(0, 0);
-      display.println("Error receiving packet!");
-      delay(EXDURATION * 1000); */
     }
   }
 

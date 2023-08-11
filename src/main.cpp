@@ -34,7 +34,13 @@ AsyncWebServer server(80);
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 280
 #define SCREEN_OFFSET 50
-#define TFT_BL D2
+//#define TFT_BL D2
+
+#define SPEED_SENSOR_PIN D2
+#define K_FACTOR 4127
+
+volatile unsigned int pulseCount = 0;
+unsigned long lastPulseTime = 0;
 
 #define AUDI_RED 0x3000
 #define AUDI_HIGHLIGHTED_RED 0x9000
@@ -183,6 +189,10 @@ void drawValueBar(int x, int y, int width, int height, float valueMin, float val
   display.drawFastVLine(pxPositionVline, y - 1, height + 2, AUDI_HIGHLIGHTED_RED);
 }
 
+void IRAM_ATTR pulseCounter() {
+  pulseCount++;
+}
+
 void setup() {
   Serial.begin(115200);
   while (!Serial)
@@ -190,7 +200,7 @@ void setup() {
     ; // Needed for native USB port only
   }
 
-  analogWrite(TFT_BL, 255);
+  //analogWrite(TFT_BL, 255);
   
   display.init();
   display.setRotation(3);
@@ -203,6 +213,8 @@ void setup() {
   initWiFi();
   delay(1000);
   display.fillScreen(AUDI_RED);
+  pinMode(SPEED_SENSOR_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN), pulseCounter, RISING);
 }
 
 void loop() {
@@ -229,7 +241,7 @@ void loop() {
         display.fillRect(160, 0 + SCREEN_OFFSET, 280 - 160, 22, AUDI_RED);
         display.fillRect(0 + 1, 25 + SCREEN_OFFSET + 1, 280 - 2, 22 - 2, AUDI_RED);
 
-        display.fillRect(120, 50 + SCREEN_OFFSET, 280 - 120 , 22, AUDI_RED);
+        display.fillRect(120, 50 + SCREEN_OFFSET, 280 - 120, 22, AUDI_RED);
         display.fillRect(0 + 1, 75 + SCREEN_OFFSET + 1, 280 - 2, 22 - 2, AUDI_RED);
 
         display.setTextColor(AUDI_HIGHLIGHTED_RED);
@@ -251,6 +263,19 @@ void loop() {
           display.setCursor(0, 50 + SCREEN_OFFSET);
           display.println(lambdaString);
           drawValueBar(0, 75 + SCREEN_OFFSET, 280, 22, v2Min, v2Max, float(data["sensor2"]), v2Vline, false);
+        }
+
+        unsigned long currentTime = millis();
+        if (currentTime - lastPulseTime >= 1000) {
+          float speed = ((float)pulseCount / (float)K_FACTOR) / ((float)(currentTime - lastPulseTime) / 3600000.0);
+          
+          display.fillRect(0, 125 + SCREEN_OFFSET, 280, 22, AUDI_RED);
+          display.setCursor(0, 125 + SCREEN_OFFSET);
+          display.print(speed, 0);
+          display.println(F(" km/h"));
+          
+          lastPulseTime = currentTime;
+          pulseCount = 0;
         }
 
         break;

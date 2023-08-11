@@ -203,7 +203,7 @@ void setup() {
   //analogWrite(TFT_BL, 255);
   
   display.init();
-  display.setRotation(3);
+  display.setRotation(1);
   display.setTextColor(AUDI_HIGHLIGHTED_RED);
   display.fillScreen(AUDI_RED);
   display.setTextSize(3);

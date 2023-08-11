@@ -202,6 +202,7 @@ void setup() {
 
   initWiFi();
   delay(1000);
+  display.fillScreen(AUDI_RED);
 }
 
 void loop() {
@@ -220,16 +221,25 @@ void loop() {
         String msg = String(packetBuffer);
 
         // Daten verarbeiten und auf dem Display anzeigen
-        display.fillScreen(AUDI_RED);
+        //display.fillScreen(AUDI_RED);
         display.setTextSize(3);
+        display.setTextColor(AUDI_RED);
+        //display.setCursor(0, 0 + SCREEN_OFFSET);
+
+        display.fillRect(160, 0 + SCREEN_OFFSET, 280 - 160, 22, AUDI_RED);
+        display.fillRect(0 + 1, 25 + SCREEN_OFFSET + 1, 280 - 2, 22 - 2, AUDI_RED);
+
+        display.fillRect(120, 50 + SCREEN_OFFSET, 280 - 120 , 22, AUDI_RED);
+        display.fillRect(0 + 1, 75 + SCREEN_OFFSET + 1, 280 - 2, 22 - 2, AUDI_RED);
+
         display.setTextColor(AUDI_HIGHLIGHTED_RED);
-        display.setCursor(0, 0 + SCREEN_OFFSET);
 
         // JSON-Daten parsen und anzeigen
         DynamicJsonDocument data(255);
         DeserializationError error = deserializeJson(data, msg);
 
         if (error) {
+          display.fillScreen(AUDI_RED);
           display.println("Error parsing JSON!");
         } else {
           String actuatorString = "Actuator: " + String(data["sensor1"].as<const char*>()) + "mA";

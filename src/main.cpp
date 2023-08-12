@@ -238,7 +238,7 @@ void loop() {
         display.setTextColor(AUDI_RED);
         //display.setCursor(0, 0 + SCREEN_OFFSET);
 
-        display.fillRect(160, 0 + SCREEN_OFFSET, 280 - 160, 22, AUDI_RED);
+        display.fillRect(100, 0 + SCREEN_OFFSET, 280 - 100, 22, AUDI_RED);
         display.fillRect(0 + 1, 25 + SCREEN_OFFSET + 1, 280 - 2, 22 - 2, AUDI_RED);
 
         display.fillRect(120, 50 + SCREEN_OFFSET, 280 - 120, 22, AUDI_RED);
@@ -254,7 +254,7 @@ void loop() {
           display.fillScreen(AUDI_RED);
           display.println("Error parsing JSON!");
         } else {
-          String actuatorString = "Actuator: " + String(data["sensor1"].as<const char*>()) + "mA";
+          String actuatorString = "Act.: " + String(data["sensor1"].as<const char*>()) + "mA";
           display.setCursor(0, 0 + SCREEN_OFFSET);
           display.println(actuatorString);
           drawValueBar(0, 25 + SCREEN_OFFSET, 280, 22, v1Min, v1Max, float(data["sensor1"]), v1Vline, false);

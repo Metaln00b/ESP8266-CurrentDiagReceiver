@@ -41,9 +41,10 @@ AsyncWebServer server(80);
 
 volatile unsigned int pulseCount = 0;
 unsigned long lastPulseTime = 0;
+float speed_kmh = 0;
 
-#define AUDI_RED 0x3000
-#define AUDI_HIGHLIGHTED_RED 0x9000
+#define AUDI_RED 0x4800 //RGB565
+#define AUDI_HIGHLIGHTED_RED 0xF980 //RGB565
 
 const int EXDURATION = 2;
 const int TIMEOUT = 2;
@@ -222,6 +223,16 @@ void loop() {
   //display.fillScreen(AUDI_RED);
 
   while (true) {
+    unsigned long currentTime = millis();
+    if (currentTime - lastPulseTime >= 1000) {
+      float timeElapsed = (float)(currentTime - lastPulseTime) / 1000.0;  // Zeit in Sekunden
+      float distance_km = (float)pulseCount / (float)K_FACTOR; // Entfernung in Kilometern
+      speed_kmh = distance_km / timeElapsed * 3600.0;
+      
+      lastPulseTime = currentTime;
+      pulseCount = 0;
+    }
+
     int packetSize = Udp.parsePacket();
 
     if (packetSize) {
@@ -265,23 +276,15 @@ void loop() {
           drawValueBar(0, 75 + SCREEN_OFFSET, 280, 22, v2Min, v2Max, float(data["sensor2"]), v2Vline, false);
         }
 
-        unsigned long currentTime = millis();
-        if (currentTime - lastPulseTime >= 1000) {
-          float speed = ((float)pulseCount / (float)K_FACTOR) / ((float)(currentTime - lastPulseTime) / 3600000.0);
-          
-          display.fillRect(0, 125 + SCREEN_OFFSET, 280, 22, AUDI_RED);
-          display.setCursor(0, 125 + SCREEN_OFFSET);
-          display.print(speed, 0);
-          display.println(F(" km/h"));
-          
-          lastPulseTime = currentTime;
-          pulseCount = 0;
-        }
+        display.fillRect(0, 125 + SCREEN_OFFSET, 280, 22, AUDI_RED);
+        display.setCursor(0, 125 + SCREEN_OFFSET);
+        display.print(speed_kmh, 0);
+        display.println(F(" km/h"));
 
         break;
       }
     }
   }
 
-  delay(500);
+  delay(150);
 }

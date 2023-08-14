@@ -37,7 +37,7 @@ AsyncWebServer server(80);
 //#define TFT_BL D2
 
 #define SPEED_SENSOR_PIN D2
-#define K_FACTOR 4127
+#define K_FACTOR 4127.0
 
 volatile unsigned int pulseCount = 0;
 unsigned long lastPulseTime = 0;
@@ -222,17 +222,18 @@ void loop() {
   // Empfangen und Verarbeiten der Daten
   //display.fillScreen(AUDI_RED);
 
-  while (true) {
-    unsigned long currentTime = millis();
-    if (currentTime - lastPulseTime >= 1000) {
-      float timeElapsed = (float)(currentTime - lastPulseTime) / 1000.0;  // Zeit in Sekunden
-      float distance_km = (float)pulseCount / (float)K_FACTOR; // Entfernung in Kilometern
-      speed_kmh = distance_km / timeElapsed * 3600.0;
-      
-      lastPulseTime = currentTime;
-      pulseCount = 0;
-    }
+  unsigned long currentTime = millis();
+  if (currentTime - lastPulseTime >= 1000) {
+    float timeElapsed = (float)(currentTime - lastPulseTime) / 1000.0;  // Zeit in Sekunden
+    float distance_km = (float)pulseCount / (float)K_FACTOR; // Entfernung in Kilometern
+    speed_kmh = (distance_km / timeElapsed * 3600.0) / 10.0;
+    
+    lastPulseTime = currentTime;
+    pulseCount = 0;
+  }
 
+  
+  while (true) {
     int packetSize = Udp.parsePacket();
 
     if (packetSize) {

@@ -37,11 +37,11 @@ AsyncWebServer server(80);
 #define SPEED_SENSOR_PIN D2
 #define K_FACTOR 4127.0
 
-// volatile unsigned int pulseCount = 0;
-// unsigned long lastPulseTime = 0;
+volatile unsigned int pulseCount = 0;
+unsigned long lastPulseTime = 0;
 unsigned long lastUdpProcessTime = 0;
 unsigned long udpProcessInterval = 100;
-// float speed_kmh = 0;
+float speed_kmh = 0;
 
 #define AUDI_RED 0x4800 // RGB565
 #define AUDI_HIGHLIGHTED_RED 0xF980 // RGB565
@@ -184,9 +184,9 @@ void drawValueBar(int x, int y, int width, int height, float valueMin, float val
   display.drawFastVLine(pxPositionVline, y - 1, height + 2, AUDI_HIGHLIGHTED_RED);
 }
 
-/* void IRAM_ATTR pulseCounter() {
+void IRAM_ATTR pulseCounter() {
   pulseCount++;
-} */
+}
 
 void processUdpPackets() {
   int packetSize = Udp.parsePacket();
@@ -239,13 +239,13 @@ void processUdpPackets() {
         drawValueBar(0, 75 + SCREEN_OFFSET, 280, 22, v2Min, v2Max, sensor2Value, v2Vline, false);
       }
 
-/*       display.fillRect(0, 125 + SCREEN_OFFSET, 280, 22, AUDI_RED);
+      display.fillRect(0, 125 + SCREEN_OFFSET, 280, 22, AUDI_RED);
       display.setCursor(0, 125 + SCREEN_OFFSET);
 
       char speed_kmhStr[10];
       dtostrf(speed_kmh, 5, 0, speed_kmhStr);
       display.print(speed_kmhStr);
-      display.println(F(" km/h")); */
+      display.println(F(" km/h"));
     }
   }
 }
@@ -270,23 +270,22 @@ void setup() {
   display.fillScreen(AUDI_RED);
 
   pinMode(SPEED_SENSOR_PIN, INPUT_PULLUP);
-//  attachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN), pulseCounter, RISING);
+  attachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN), pulseCounter, FALLING);
 }
 
 void loop() {
   unsigned long currentTime = millis();
   
-/*   if (currentTime - lastPulseTime >= 1000) {
-    
+  if (currentTime - lastPulseTime >= 1000) {
+    detachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN));
     float timeElapsed = (float)(currentTime - lastPulseTime) / 1000.0;  // Zeit in Sekunden
     float distance_km = (float)pulseCount / (float)K_FACTOR; // Entfernung in Kilometern
     speed_kmh = (distance_km / timeElapsed * 3600.0) / 10.0;
     
     lastPulseTime = currentTime;
-    detachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN));
     pulseCount = 0;
-    attachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN), pulseCounter, RISING);
-  } */
+    attachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN), pulseCounter, FALLING);
+  }
 
   if (currentTime - lastUdpProcessTime >= udpProcessInterval) {
     processUdpPackets();

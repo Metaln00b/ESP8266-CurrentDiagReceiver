@@ -40,7 +40,7 @@ AsyncWebServer server(80);
 volatile unsigned int pulseCount = 0;
 unsigned long lastPulseTime = 0;
 unsigned long lastUdpProcessTime = 0;
-unsigned long udpProcessInterval = 100;
+unsigned long udpProcessInterval = 0;
 float speed_kmh = 0;
 
 #define AUDI_RED 0x4800 // RGB565

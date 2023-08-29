@@ -43,7 +43,7 @@ unsigned long lastUdpProcessTime = 0;
 unsigned long udpProcessInterval = 0;
 float speed_kmh = 0;
 
-#define AUDI_RED 0x4800 // RGB565
+#define AUDI_RED 0x0800 // RGB565
 #define AUDI_HIGHLIGHTED_RED 0xF980 // RGB565
 
 const int EXDURATION = 2;
@@ -239,11 +239,12 @@ void processUdpPackets() {
         drawValueBar(0, 75 + SCREEN_OFFSET, 280, 22, v2Min, v2Max, sensor2Value, v2Vline, false);
       }
 
-      display.fillRect(0, 125 + SCREEN_OFFSET, 280, 22, AUDI_RED);
+      display.fillRect(0, 125 + SCREEN_OFFSET, 140, 28, AUDI_RED);
       display.setCursor(0, 125 + SCREEN_OFFSET);
 
       char speed_kmhStr[10];
       dtostrf(speed_kmh, 5, 0, speed_kmhStr);
+      display.setTextSize(4);
       display.print(speed_kmhStr);
       display.println(F(" km/h"));
     }

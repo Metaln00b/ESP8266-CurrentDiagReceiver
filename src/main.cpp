@@ -179,6 +179,52 @@ void drawValueBar(int x, int y, int width, int height, float valueMin, float val
   display.drawFastVLine(pxPositionVline, y - 1, height + 2, AUDI_HIGHLIGHTED_RED);
 }
 
+#define SENSOR_HISTORY_SIZE 5
+
+float sensor1History[SENSOR_HISTORY_SIZE];
+float sensor2History[SENSOR_HISTORY_SIZE];
+int historyIndex = 0;
+
+void updateSensorHistory(float sensor1Value, float sensor2Value) {
+  sensor1History[historyIndex] = sensor1Value;
+  sensor2History[historyIndex] = sensor2Value;
+  historyIndex = (historyIndex + 1) % SENSOR_HISTORY_SIZE;
+}
+
+void drawMinMaxValues() {
+  float minSensor1 = sensor1History[0];
+  float maxSensor1 = sensor1History[0];
+  float minSensor2 = sensor2History[0];
+  float maxSensor2 = sensor2History[0];
+
+  for (int i = 1; i < SENSOR_HISTORY_SIZE; i++) {
+    minSensor1 = min(minSensor1, sensor1History[i]);
+    maxSensor1 = max(maxSensor1, sensor1History[i]);
+    minSensor2 = min(minSensor2, sensor2History[i]);
+    maxSensor2 = max(maxSensor2, sensor2History[i]);
+  }
+
+  display.fillRect(0, 125 + SCREEN_OFFSET, 240, 140, AUDI_RED);
+  display.setTextSize(2);
+  display.setTextColor(AUDI_RED);
+
+  display.setTextSize(2);
+  display.setTextColor(AUDI_HIGHLIGHTED_RED);
+  display.setCursor(0, 125 + SCREEN_OFFSET);
+  display.print(F("Act. "));
+  display.print(minSensor1);
+  display.print(F(" / "));
+  display.println(maxSensor1);
+
+  display.setTextSize(2);
+  display.setTextColor(AUDI_HIGHLIGHTED_RED);
+  display.setCursor(0, 150 + SCREEN_OFFSET);
+  display.print(F("Lambda "));
+  display.print(minSensor2);
+  display.print(F(" / "));
+  display.println(maxSensor2);
+}
+
 void processUdpPackets() {
   int packetSize = Udp.parsePacket();
 
@@ -217,6 +263,8 @@ void processUdpPackets() {
         dtostrf(sensor1Value, 6, 2, sensor1ValueStr);
         dtostrf(sensor2Value, 3, 2, sensor2ValueStr);
 
+        updateSensorHistory(sensor1Value, sensor2Value);
+
         display.setCursor(0, 0 + SCREEN_OFFSET);
         display.print(F("Act. "));
         display.print(sensor1ValueStr);
@@ -228,6 +276,8 @@ void processUdpPackets() {
         display.print(sensor2ValueStr);
         display.println();
         drawValueBar(0, 75 + SCREEN_OFFSET, 240, 22, v2Min, v2Max, sensor2Value, v2Vline, false);
+
+        drawMinMaxValues();
       }
     }
   }

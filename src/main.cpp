@@ -4,7 +4,7 @@
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
-#include <AsyncElegantOTA.h>
+#include <ElegantOTA.h>
 #include <WiFiUdp.h>
 #include <ESP8266WiFiGratuitous.h>
 #include <TFT_eSPI.h>
@@ -144,7 +144,7 @@ void initWiFi()
     Serial.println(F("IP address: ") + WiFi.localIP().toString());
   }
 
-  AsyncElegantOTA.begin(&server);
+  ElegantOTA.begin(&server);
 
   server.begin();
 

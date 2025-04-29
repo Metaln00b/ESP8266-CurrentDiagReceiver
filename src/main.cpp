@@ -179,6 +179,38 @@ void drawValueBar(int x, int y, int width, int height, float valueMin, float val
   display.drawFastVLine(pxPositionVline, y - 1, height + 2, AUDI_HIGHLIGHTED_RED);
 }
 
+void drawValueBarV2(int x, int y, int width, int height, float valueMin, float valueMax, float value, float vlineValue, bool showNumbers) {
+  float roundValue = min(max(valueMin, value), valueMax);
+  float valueRange = valueMax - valueMin;
+  float pxPerValue = (width - 4) / valueRange;
+  int pxPositionVline = int(pxPerValue * (vlineValue - valueMin) + 2);
+  int pxPositionValue = int(pxPerValue * (roundValue - valueMin) + 2);
+  int start = min(pxPositionValue, pxPositionVline);
+  int end = max(pxPositionValue, pxPositionVline);
+
+  spr.drawRect(x, y, width, height, AUDI_HIGHLIGHTED_RED);
+  spr.fillRect(x + start, y + 2, end - start, height - 4, AUDI_HIGHLIGHTED_RED);
+
+  if (height >= 15 && showNumbers) {
+    char roundValueStr[10];
+    dtostrf(roundValue, 5, 2, roundValueStr);
+    
+    if (value >= vlineValue) {
+      spr.setTextSize(3);
+      spr.setTextColor(AUDI_HIGHLIGHTED_RED);
+      spr.setCursor(int(width / 9), y + 5);
+      spr.println(roundValueStr);
+    } else {
+      spr.setTextSize(3);
+      spr.setTextColor(AUDI_HIGHLIGHTED_RED);
+      spr.setCursor(int(width / 1.5), y + 5);
+      spr.println(roundValueStr);
+    }
+  }
+
+  spr.drawFastVLine(pxPositionVline, y - 1, height + 2, AUDI_HIGHLIGHTED_RED);
+}
+
 #define SENSOR_HISTORY_SIZE 5
 
 float sensor1History[SENSOR_HISTORY_SIZE];
@@ -236,7 +268,7 @@ void processUdpPackets() {
       packetBuffer[len] = '\0';
       const char* msg = packetBuffer;
 
-      display.setTextSize(3);
+      /* display.setTextSize(3);
       display.setTextColor(AUDI_RED);
 
       display.fillRect(90, 0 + SCREEN_OFFSET, 240 - 90, 22, AUDI_RED);
@@ -245,7 +277,7 @@ void processUdpPackets() {
       display.fillRect(120, 50 + SCREEN_OFFSET, 240 - 120, 22, AUDI_RED);
       display.fillRect(0 + 1, 75 + SCREEN_OFFSET + 1, 240 - 2, 22 - 2, AUDI_RED);
 
-      display.setTextColor(AUDI_HIGHLIGHTED_RED);
+      display.setTextColor(AUDI_HIGHLIGHTED_RED); */
 
       // JSON-Daten parsen und anzeigen
       DynamicJsonDocument data(255);
@@ -263,21 +295,31 @@ void processUdpPackets() {
         dtostrf(sensor1Value, 6, 2, sensor1ValueStr);
         dtostrf(sensor2Value, 3, 2, sensor2ValueStr);
 
-        updateSensorHistory(sensor1Value, sensor2Value);
+        spr.fillSprite(AUDI_RED);
 
-        display.setCursor(0, 0 + SCREEN_OFFSET);
+        spr.setCursor(0, 0);
+        spr.print(F("Act. "));
+        spr.print(sensor1ValueStr);
+        spr.println(F("mA"));
+        drawValueBarV2(0, 25, 240, 22, v1Min, v1Max, sensor1Value, v1Vline, false);
+
+        spr.pushSprite(0, 0);
+
+        //updateSensorHistory(sensor1Value, sensor2Value);
+
+        /* display.setCursor(0, 0 + SCREEN_OFFSET);
         display.print(F("Act. "));
         display.print(sensor1ValueStr);
         display.println(F("mA"));
-        drawValueBar(0, 25 + SCREEN_OFFSET, 240, 22, v1Min, v1Max, sensor1Value, v1Vline, false);
+        drawValueBar(0, 25 + SCREEN_OFFSET, 240, 22, v1Min, v1Max, sensor1Value, v1Vline, false); */
 
-        display.setCursor(0, 50 + SCREEN_OFFSET);
+        /* display.setCursor(0, 50 + SCREEN_OFFSET);
         display.print(F("Lambda "));
         display.print(sensor2ValueStr);
         display.println();
-        drawValueBar(0, 75 + SCREEN_OFFSET, 240, 22, v2Min, v2Max, sensor2Value, v2Vline, false);
+        drawValueBar(0, 75 + SCREEN_OFFSET, 240, 22, v2Min, v2Max, sensor2Value, v2Vline, false); */
 
-        drawMinMaxValues();
+        //drawMinMaxValues();
       }
     }
   }
@@ -291,13 +333,17 @@ void setup() {
   }
 
   display.init();
+  // Optionally set colour depth to 8 or 16 bits, default is 16 if not spedified
+  spr.setColorDepth(8);
 
-  display.setRotation(0);
+  spr.createSprite(240, 48);
+
+  /* display.setRotation(0);
   display.setTextColor(AUDI_HIGHLIGHTED_RED);
   display.fillScreen(AUDI_RED);
   display.setTextSize(3);
   display.setCursor(0, 0 + SCREEN_OFFSET);
-  display.println(F("Connecting..."));
+  display.println(F("Connecting...")); */
 
   pinMode(BL_PIN, OUTPUT);
   digitalWrite(BL_PIN, LOW);

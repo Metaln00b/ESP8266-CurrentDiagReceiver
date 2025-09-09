@@ -9,6 +9,7 @@
 #include <ESP8266WiFiGratuitous.h>
 #include <TFT_eSPI.h>
 #include <SPI.h>
+#include <LittleFS.h>
 
 #define DRAW_DIGITS
 
@@ -54,6 +55,74 @@ float v2Max = 1.4;
 float v2Vline = 1.0;
 
 WiFiUDP Udp;
+
+const int CHAR_SIZE = 20;  // Größe der Zeichen in Pixel
+
+void drawCharToSprite(char c, int x, int y, TFT_eSprite &sprite, uint16_t color){
+    String path;
+
+    // Sonderzeichen escapen
+    if(c == '/') path = "/font_bin/slash.bin";
+    else if(c == '\\') path = "/font_bin/backslash.bin";
+    else if(c == '.') path = "/font_bin/dot.bin";
+    else if(c == ',') path = "/font_bin/comma.bin";
+    else path = "/font_bin/" + String(c) + ".bin";
+
+    File f = LittleFS.open(path, "r");
+    if(!f) return;
+
+    const int CHAR_SIZE = 20;
+    uint8_t bmp[CHAR_SIZE*CHAR_SIZE];
+    f.read(bmp, CHAR_SIZE*CHAR_SIZE);
+    f.close();
+
+    for(int row=0; row<CHAR_SIZE; row++){
+        for(int col=0; col<CHAR_SIZE; col++){
+            if(bmp[row*CHAR_SIZE + col]) // nur die Textpixel
+                spr.drawPixel(x + col, y + row, color);
+        }
+    }
+}
+
+void drawText(const char* text, int x, int y);
+
+int cursorX = 0;
+int cursorY = 0;
+
+// Cursor setzen
+void setTextCursor(int x, int y){
+    cursorX = x;
+    cursorY = y;
+}
+
+// Textfarbe setzen (optional)
+uint16_t textColor = AUDI_HIGHLIGHTED_RED;
+void setTextColor(uint16_t color){
+    textColor = color;
+}
+
+// Ein einzelnes Zeichen zeichnen und Cursor verschieben
+void printChar(char c){
+    drawCharToSprite(c, cursorX, cursorY, spr, textColor);
+    cursorX += CHAR_SIZE;
+
+    if(cursorX + CHAR_SIZE > 240){  // Zeilenumbruch
+        cursorX = 0;
+        cursorY += CHAR_SIZE;
+    }
+}
+
+// Text ausgeben
+void printText(const char* text){
+    for(int i=0; text[i]; i++){
+        if(text[i] == '\n'){
+            cursorX = 0;
+            cursorY += CHAR_SIZE;
+        } else {
+            printChar(text[i]);
+        }
+    }
+}
 
 void showClients() 
 {
@@ -297,10 +366,16 @@ void processUdpPackets() {
 
         spr.fillSprite(AUDI_RED);
 
-        spr.setCursor(0, 0);
-        spr.print(F("Act. "));
-        spr.print(sensor1ValueStr);
-        spr.println(F("mA"));
+        //spr.setCursor(0, 0);
+        //spr.print(F("Act. "));
+        //spr.print(sensor1ValueStr);
+        //spr.println(F("mA"));
+        setTextCursor(0, 0);
+        setTextColor(AUDI_HIGHLIGHTED_RED);
+
+        printText("Act. ");
+        printText(sensor1ValueStr);
+        //printText("mA");
         drawValueBarV2(0, 25, 240, 22, v1Min, v1Max, sensor1Value, v1Vline, false);
 
         spr.pushSprite(0, 0);
@@ -325,11 +400,58 @@ void processUdpPackets() {
   }
 }
 
+// Problematische Zeichen werden gemappt
+String getCharFile(char c){
+    if(c == '/') return "/font/slash.bin";
+    if(c == '\\') return "/font/backslash.bin";
+    if(c == '.') return "/font/dot.bin";
+    if(c == ',') return "/font/comma.bin";
+    return "/font/" + String(c) + ".bin";
+}
+
+// Ein einzelnes Zeichen aus LittleFS-BMP zeichnen
+void drawChar(char c, int x, int y){
+    String path = getCharFile(c);
+    uint8_t bmp[CHAR_SIZE*CHAR_SIZE];
+    File f = LittleFS.open(path, "r");
+    if(!f) return;
+    f.read(bmp, CHAR_SIZE*CHAR_SIZE);
+    f.close();
+
+    // Pixels zeichnen
+    for(int row=0; row<CHAR_SIZE; row++){
+        for(int col=0; col<CHAR_SIZE; col++){
+            if(bmp[row*CHAR_SIZE + col])
+                spr.drawPixel(x+col, y+row, AUDI_HIGHLIGHTED_RED);
+        }
+    }
+}
+
+// Text zeichnen, automatisch Zeilenumbruch bei Bildschirmende
+void drawText(const char* text, int x, int y){
+    int cursorX = x;
+    int cursorY = y;
+
+    for(int i=0; text[i]; i++){
+        drawChar(text[i], cursorX, cursorY);
+        cursorX += CHAR_SIZE;
+        if(cursorX + CHAR_SIZE > 240){
+            cursorX = x;
+            cursorY += CHAR_SIZE;
+        }
+    }
+}
+
 void setup() {
   Serial.begin(115200);
   while (!Serial)
   {
     ; // Needed for native USB port only
+  }
+
+  if(!LittleFS.begin()){
+      Serial.println("LittleFS mount failed!");
+      return;
   }
 
   display.init();
@@ -351,6 +473,13 @@ void setup() {
   initWiFi();
   delay(1000);
   display.fillScreen(AUDI_RED);
+
+    // Beispieltext
+  spr.fillSprite(AUDI_RED);
+  drawText("Hello 20.0mA", 0, 0);
+  spr.pushSprite(0, 0, AUDI_RED);
+
+  delay(5000);
 }
 
 void loop() {

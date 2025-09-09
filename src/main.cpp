@@ -56,22 +56,21 @@ float v2Vline = 1.0;
 
 WiFiUDP Udp;
 
-const int CHAR_SIZE = 20;  // Größe der Zeichen in Pixel
+const int CHAR_SIZE = 18;  // Größe der Zeichen in Pixel
 
 void drawCharToSprite(char c, int x, int y, TFT_eSprite &sprite, uint16_t color){
     String path;
 
     // Sonderzeichen escapen
-    if(c == '/') path = "/font_bin/slash.bin";
-    else if(c == '\\') path = "/font_bin/backslash.bin";
-    else if(c == '.') path = "/font_bin/dot.bin";
-    else if(c == ',') path = "/font_bin/comma.bin";
-    else path = "/font_bin/" + String(c) + ".bin";
+    if(c == '/') path = "/font/slash.bin";
+    else if(c == '\\') path = "/font/backslash.bin";
+    else if(c == '.') path = "/font/dot.bin";
+    else if(c == ',') path = "/font/comma.bin";
+    else path = "/font/" + String(c) + ".bin";
 
     File f = LittleFS.open(path, "r");
     if(!f) return;
 
-    const int CHAR_SIZE = 20;
     uint8_t bmp[CHAR_SIZE*CHAR_SIZE];
     f.read(bmp, CHAR_SIZE*CHAR_SIZE);
     f.close();
@@ -375,7 +374,7 @@ void processUdpPackets() {
 
         printText("Act. ");
         printText(sensor1ValueStr);
-        //printText("mA");
+        printText("mA");
         drawValueBarV2(0, 25, 240, 22, v1Min, v1Max, sensor1Value, v1Vline, false);
 
         spr.pushSprite(0, 0);
@@ -456,7 +455,7 @@ void setup() {
 
   display.init();
   // Optionally set colour depth to 8 or 16 bits, default is 16 if not spedified
-  spr.setColorDepth(8);
+  spr.setColorDepth(16);
 
   spr.createSprite(240, 48);
 

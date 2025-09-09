@@ -4,7 +4,7 @@ import os
 # Pfad zur Eurostile TTF-Font
 FONT_PATH = "Eurostile.ttf"  # <-- deine TTF-Datei hier
 OUTPUT_DIR = "../data/font"
-CHAR_SIZE = 20  # Pixelgröße pro Zeichen
+CHAR_SIZE = 18  # Pixelgröße pro Zeichen
 
 # Zeichenliste
 CHARS = "%+,-.\/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

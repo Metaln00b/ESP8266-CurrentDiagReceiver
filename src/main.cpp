@@ -283,7 +283,7 @@ void processUdpPackets()
       spr.fillSprite(AUDI_RED);
 
       char speed_kmhStr[10];
-      dtostrf(100, 5, 0, speed_kmhStr);
+      dtostrf(speed_kmh, 5, 0, speed_kmhStr);
       spr.setTextSize(4);
       spr.setCursor(0, 0);
       spr.print(speed_kmhStr);

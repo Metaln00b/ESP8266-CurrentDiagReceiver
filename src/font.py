@@ -2,12 +2,12 @@ from PIL import Image, ImageFont, ImageDraw
 import os
 
 # Pfad zur Eurostile TTF-Font
-FONT_PATH = "Eurostile.ttf"  # <-- deine TTF-Datei hier
+FONT_PATH = "_Eurostile.ttf"  # <-- deine TTF-Datei hier
 OUTPUT_DIR = "../data/font"
 CHAR_SIZE = 18  # Pixelgröße pro Zeichen
 
 # Zeichenliste
-CHARS = "%+,-.\/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+CHARS = "%+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
 SAFE_NAMES = {'/': 'slash', '\\': 'backslash', '.': 'dot', ',': 'comma'}
 
@@ -23,7 +23,7 @@ for c in CHARS:
     w = bbox[2] - bbox[0]
     h = bbox[3] - bbox[1]
     x = (CHAR_SIZE - w) // 2
-    y = (CHAR_SIZE - (ascent + descent)) // 2 + (ascent - bbox[3])
+    y = ((CHAR_SIZE) - (ascent + descent)) // 2 + (ascent - bbox[3])
 
     draw.text((x, y), c, fill=1, font=font)
 

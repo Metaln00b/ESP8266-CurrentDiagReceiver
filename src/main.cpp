@@ -365,10 +365,6 @@ void processUdpPackets() {
 
         spr.fillSprite(AUDI_RED);
 
-        //spr.setCursor(0, 0);
-        //spr.print(F("Act. "));
-        //spr.print(sensor1ValueStr);
-        //spr.println(F("mA"));
         setTextCursor(0, 0);
         setTextColor(AUDI_HIGHLIGHTED_RED);
 
@@ -378,6 +374,17 @@ void processUdpPackets() {
         drawValueBarV2(0, 25, 240, 22, v1Min, v1Max, sensor1Value, v1Vline, false);
 
         spr.pushSprite(0, 0);
+
+        spr.fillSprite(AUDI_RED);
+
+        setTextCursor(0, 0);
+        setTextColor(AUDI_HIGHLIGHTED_RED);
+
+        printText("Lambda ");
+        printText(sensor2ValueStr);
+        drawValueBarV2(0, 25, 240, 22, v2Min, v2Max, sensor2Value, v2Vline, false);
+
+        spr.pushSprite(0, 50);
 
         //updateSensorHistory(sensor1Value, sensor2Value);
 
@@ -472,13 +479,7 @@ void setup() {
   initWiFi();
   delay(1000);
   display.fillScreen(AUDI_RED);
-
-    // Beispieltext
   spr.fillSprite(AUDI_RED);
-  drawText("Hello 20.0mA", 0, 0);
-  spr.pushSprite(0, 0, AUDI_RED);
-
-  delay(5000);
 }
 
 void loop() {

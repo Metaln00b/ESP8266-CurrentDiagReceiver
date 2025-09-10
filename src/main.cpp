@@ -54,97 +54,6 @@ float v2Vline = 1.0;
 
 WiFiUDP Udp;
 
-const int CHAR_SIZE = 18;
-
-void drawCharToSprite(char c, int x, int y, TFT_eSprite &sprite, uint16_t color, uint8_t expand)
-{
-  String path;
-
-  if (c == '/')
-    path = "/font/slash.bin";
-  else if (c == '\\')
-    path = "/font/backslash.bin";
-  else if (c == '.')
-    path = "/font/dot.bin";
-  else if (c == ',')
-    path = "/font/comma.bin";
-  else
-    path = "/font/" + String(c) + ".bin";
-
-  File f = LittleFS.open(path, "r");
-  if (!f)
-    return;
-
-  uint8_t bmp[CHAR_SIZE * CHAR_SIZE];
-  f.read(bmp, CHAR_SIZE * CHAR_SIZE);
-  f.close();
-
-  int newSize = CHAR_SIZE + expand;
-
-  for (int row = 0; row < CHAR_SIZE; row++)
-  {
-    for (int col = 0; col < CHAR_SIZE; col++)
-    {
-      if (bmp[row * CHAR_SIZE + col])
-      {
-        int sx = x + col * (newSize) / CHAR_SIZE;
-        int sy = y + row * (newSize) / CHAR_SIZE;
-        int sx2 = x + (col+1) * (newSize) / CHAR_SIZE;
-        int sy2 = y + (row+1) * (newSize) / CHAR_SIZE;
-
-        for(int yy=sy; yy<sy2; yy++){
-            for(int xx=sx; xx<sx2; xx++){
-                sprite.drawPixel(xx, yy, color);
-            }
-        }
-      }
-    }
-  }
-}
-
-int cursorX = 0;
-int cursorY = 0;
-void setTextCursor(int x, int y)
-{
-  cursorX = x;
-  cursorY = y;
-}
-
-uint16_t textColor = AUDI_HIGHLIGHTED_RED;
-void setTextColor(uint16_t color)
-{
-  textColor = color;
-}
-
-void printChar(char c, uint8_t expand)
-{
-  int size = CHAR_SIZE + expand;
-  drawCharToSprite(c, cursorX, cursorY, spr, textColor, expand);
-  cursorX += size;
-  if (cursorX + size > SCREEN_HEIGHT) {
-    cursorX = 0;
-    cursorY += size;
-  }
-}
-
-void printText(const char *text, uint8_t expand)
-{
-  int size = CHAR_SIZE + expand;
-
-  for (int i = 0; text[i]; i++)
-  {
-    if (text[i] == '\n')
-    {
-      cursorX = 0;
-      cursorY += size;
-    }
-    else
-    {
-      printChar(text[i], expand);
-    }
-  }
-}
-
 void showClients()
 {
   unsigned char number_client;
@@ -327,7 +236,8 @@ void processUdpPackets()
       packetBuffer[len] = '\0';
       const char *msg = packetBuffer;
 
-      setTextColor(AUDI_RED);
+      spr.setTextSize(2);
+      spr.setTextColor(AUDI_HIGHLIGHTED_RED);
 
       // JSON-Daten parsen und anzeigen
       DynamicJsonDocument data(255);
@@ -351,12 +261,10 @@ void processUdpPackets()
         // Actuator
         spr.fillSprite(AUDI_RED);
 
-        setTextCursor(0, 0);
-        setTextColor(AUDI_HIGHLIGHTED_RED);
-
-        printText("Act. ", 0);
-        printText(sensor1ValueStr, 0);
-        printText("mA", 0);
+        spr.setCursor(0, 0);
+        spr.print(F("Act.: "));
+        spr.print(sensor1ValueStr);
+        spr.println(F("mA"));
         drawValueBarSprite(0, 25, SCREEN_HEIGHT, 22, v1Min, v1Max, sensor1Value, v1Vline, false);
 
         spr.pushSprite(0, 0 + SCREEN_OFFSET);
@@ -364,11 +272,9 @@ void processUdpPackets()
         // Lambda
         spr.fillSprite(AUDI_RED);
 
-        setTextCursor(0, 0);
-        setTextColor(AUDI_HIGHLIGHTED_RED);
-
-        printText("Lambda ", 0);
-        printText(sensor2ValueStr, 0);
+        spr.setCursor(0, 0);
+        spr.print(F("Lambda: "));
+        spr.println(sensor2ValueStr);
         drawValueBarSprite(0, 25, SCREEN_HEIGHT, 22, v2Min, v2Max, sensor2Value, v2Vline, false);
 
         spr.pushSprite(0, 75 + SCREEN_OFFSET);
@@ -377,11 +283,13 @@ void processUdpPackets()
       spr.fillSprite(AUDI_RED);
 
       char speed_kmhStr[10];
-      dtostrf(speed_kmh, 5, 0, speed_kmhStr);
-      printText(speed_kmhStr, 6);
-      printText(" km/h", 6);
+      dtostrf(100, 5, 0, speed_kmhStr);
+      spr.setTextSize(4);
+      spr.setCursor(0, 0);
+      spr.print(speed_kmhStr);
+      spr.println(F(" km/h"));
 
-      spr.pushSprite(0, 125 + SCREEN_OFFSET);
+      spr.pushSprite(0, 150 + SCREEN_OFFSET);
     }
   }
 }
@@ -406,14 +314,20 @@ void setup()
   #endif
 
   display.init();
+  #ifndef DESKTOP_DISPLAY
   display.setRotation(1);
+  #else
+  display.setRotation(0);
+  #endif
+  
+  display.setTextColor(AUDI_HIGHLIGHTED_RED);
   display.fillScreen(AUDI_RED);
-
+  display.setTextSize(3);
+  display.setCursor(0, 0 + SCREEN_OFFSET);
+  display.println(F("Connecting..."));
+  
   spr.setColorDepth(16);
-  spr.createSprite(SCREEN_HEIGHT, 48); // height as width because of rotation
-  spr.fillSprite(AUDI_RED);
-  printText("Connecting...", 1);
-  spr.pushSprite(0, 0);
+  spr.createSprite(240, 48);
 
   initWiFi();
   delay(1000);
@@ -427,17 +341,17 @@ void loop()
 {
   unsigned long currentTime = millis();
 
-  if (currentTime - lastPulseTime >= 500)
-  {
-    detachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN));
-    float timeElapsed = (float)(currentTime - lastPulseTime) / 1000.0; // Zeit in Sekunden
-    float distance_km = (float)pulseCount / (float)K_FACTOR;           // Entfernung in Kilometern
-    speed_kmh = (distance_km / timeElapsed * 3600.0);
+//   if (currentTime - lastPulseTime >= 500)
+//   {
+//     detachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN));
+//     float timeElapsed = (float)(currentTime - lastPulseTime) / 1000.0; // Zeit in Sekunden
+//     float distance_km = (float)pulseCount / (float)K_FACTOR;           // Entfernung in Kilometern
+//     speed_kmh = (distance_km / timeElapsed * 3600.0);
 
-    lastPulseTime = currentTime;
-    pulseCount = 0;
-    attachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN), pulseCounter, FALLING);
-  }
+//     lastPulseTime = currentTime;
+//     pulseCount = 0;
+//     attachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN), pulseCounter, FALLING);
+//   }
 
   if (currentTime - lastUdpProcessTime >= udpProcessInterval)
   {

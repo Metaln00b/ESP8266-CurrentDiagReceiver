@@ -11,20 +11,8 @@
 #include <SPI.h>
 #include <LittleFS.h>
 
-#define DRAW_DIGITS
-
-#ifdef DRAW_DIGITS
-  #include "NotoSans_Bold.h"
-  #include "OpenFontRender.h"
-  #define TTF_FONT NotoSans_Bold
-#endif
-
 TFT_eSPI display = TFT_eSPI();
 TFT_eSprite spr = TFT_eSprite(&display);
-
-#ifdef DRAW_DIGITS
-OpenFontRender ofr;
-#endif
 
 const char* ssid = "CurrentDiagReceiver";
 const char* pass = "123456789";
@@ -56,12 +44,11 @@ float v2Vline = 1.0;
 
 WiFiUDP Udp;
 
-const int CHAR_SIZE = 18;  // Größe der Zeichen in Pixel
+const int CHAR_SIZE = 18;
 
 void drawCharToSprite(char c, int x, int y, TFT_eSprite &sprite, uint16_t color){
     String path;
 
-    // Sonderzeichen escapen
     if(c == '/') path = "/font/slash.bin";
     else if(c == '\\') path = "/font/backslash.bin";
     else if(c == '.') path = "/font/dot.bin";
@@ -75,9 +62,9 @@ void drawCharToSprite(char c, int x, int y, TFT_eSprite &sprite, uint16_t color)
     f.read(bmp, CHAR_SIZE*CHAR_SIZE);
     f.close();
 
-    for(int row=0; row<CHAR_SIZE; row++){
-        for(int col=0; col<CHAR_SIZE; col++){
-            if(bmp[row*CHAR_SIZE + col]) // nur die Textpixel
+    for(int row=0; row<CHAR_SIZE; row++) {
+        for(int col=0; col<CHAR_SIZE; col++) {
+            if(bmp[row*CHAR_SIZE + col])
                 spr.drawPixel(x + col, y + row, color);
         }
     }
@@ -87,34 +74,29 @@ void drawText(const char* text, int x, int y);
 
 int cursorX = 0;
 int cursorY = 0;
-
-// Cursor setzen
 void setTextCursor(int x, int y){
     cursorX = x;
     cursorY = y;
 }
 
-// Textfarbe setzen (optional)
 uint16_t textColor = AUDI_HIGHLIGHTED_RED;
-void setTextColor(uint16_t color){
+void setTextColor(uint16_t color) {
     textColor = color;
 }
 
-// Ein einzelnes Zeichen zeichnen und Cursor verschieben
-void printChar(char c){
+void printChar(char c) {
     drawCharToSprite(c, cursorX, cursorY, spr, textColor);
     cursorX += CHAR_SIZE;
 
-    if(cursorX + CHAR_SIZE > 240){  // Zeilenumbruch
+    if(cursorX + CHAR_SIZE > 240){
         cursorX = 0;
         cursorY += CHAR_SIZE;
     }
 }
 
-// Text ausgeben
-void printText(const char* text){
-    for(int i=0; text[i]; i++){
-        if(text[i] == '\n'){
+void printText(const char* text) {
+    for(int i=0; text[i]; i++) {
+        if(text[i] == '\n') {
             cursorX = 0;
             cursorY += CHAR_SIZE;
         } else {
@@ -363,6 +345,7 @@ void processUdpPackets() {
         dtostrf(sensor1Value, 6, 2, sensor1ValueStr);
         dtostrf(sensor2Value, 3, 2, sensor2ValueStr);
 
+        // Actuator
         spr.fillSprite(AUDI_RED);
 
         setTextCursor(0, 0);
@@ -375,6 +358,7 @@ void processUdpPackets() {
 
         spr.pushSprite(0, 0);
 
+        // Lambda
         spr.fillSprite(AUDI_RED);
 
         setTextCursor(0, 0);

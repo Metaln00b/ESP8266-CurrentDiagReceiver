@@ -341,17 +341,17 @@ void loop()
 {
   unsigned long currentTime = millis();
 
-//   if (currentTime - lastPulseTime >= 500)
-//   {
-//     detachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN));
-//     float timeElapsed = (float)(currentTime - lastPulseTime) / 1000.0; // Zeit in Sekunden
-//     float distance_km = (float)pulseCount / (float)K_FACTOR;           // Entfernung in Kilometern
-//     speed_kmh = (distance_km / timeElapsed * 3600.0);
+  if (currentTime - lastPulseTime >= 500)
+  {
+    detachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN));
+    float timeElapsed = (float)(currentTime - lastPulseTime) / 1000.0; // Zeit in Sekunden
+    float distance_km = (float)pulseCount / (float)K_FACTOR;           // Entfernung in Kilometern
+    speed_kmh = (distance_km / timeElapsed * 3600.0);
 
-//     lastPulseTime = currentTime;
-//     pulseCount = 0;
-//     attachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN), pulseCounter, FALLING);
-//   }
+    lastPulseTime = currentTime;
+    pulseCount = 0;
+    attachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN), pulseCounter, FALLING);
+  }
 
   if (currentTime - lastUdpProcessTime >= udpProcessInterval)
   {

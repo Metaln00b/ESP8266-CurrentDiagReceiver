@@ -264,6 +264,8 @@ void processUdpPackets()
                 dtostrf(sensor1Value, 6, 2, sensor1ValueStr);
                 dtostrf(sensor2Value, 3, 2, sensor2ValueStr);
 
+                spr.setTextSize(3);
+
                 // Actuator
                 spr.fillSprite(AUDI_RED);
 
@@ -273,7 +275,7 @@ void processUdpPackets()
                 spr.println(F("mA"));
                 drawValueBarSprite(0, 25, SCREEN_WIDTH, 22, v1Min, v1Max, sensor1Value, v1Vline, false);
 
-                spr.pushSprite(0, 0 + SCREEN_OFFSET);
+                spr.pushSprite(0, 10 + SCREEN_OFFSET);
 
                 // Lambda
                 spr.fillSprite(AUDI_RED);
@@ -335,7 +337,7 @@ void setup()
 #else
     display.drawBitmap(0, 0, audi_logo_bits, audi_logo_width, audi_logo_height, AUDI_HIGHLIGHTED_RED);
 #endif
-    display.setCursor(0, 180 + SCREEN_OFFSET);
+    display.setCursor(20, 180 + SCREEN_OFFSET);
     display.println(F("Connecting..."));
 
     spr.setColorDepth(16);

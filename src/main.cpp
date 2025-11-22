@@ -357,14 +357,16 @@ void loop()
 
     if (currentTime - lastPulseTime >= 500)
     {
-        detachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN));
-        float timeElapsed = (float)(currentTime - lastPulseTime) / 1000.0; // Zeit in Sekunden
-        float distance_km = (float)pulseCount / (float)K_FACTOR;           // Entfernung in Kilometern
+        noInterrupts();
+        unsigned long pulses = pulseCount;
+        pulseCount = 0;
+        interrupts();
+
+        float timeElapsed = (float)(currentTime - lastPulseTime) / 1000.0;
+        float distance_km = (float)pulses / (float)K_FACTOR;
         speed_kmh = (distance_km / timeElapsed * 3600.0);
 
         lastPulseTime = currentTime;
-        pulseCount = 0;
-        attachInterrupt(digitalPinToInterrupt(SPEED_SENSOR_PIN), pulseCounter, FALLING);
     }
 
     if (currentTime - lastUdpProcessTime >= udpProcessInterval)
